@@ -1,91 +1,105 @@
 #include<stdio.h>
-
 #include<string.h>
-
 #include<ctype.h>
-
-void input();
-void output();
-void change(int p, char * res);
-void constant();
-
-struct expr {
-  char op[2], op1[5], op2[5], res[5];
-  int flag;
+#include<stdlib.h>
+#define MAXQUADS 10
+#define OPNDSIZE 5
+typedef enum {false,true}bool;
+int numquads=0;
+typedef struct
+{
+	char op;
+	char op1[OPNDSIZE];
+	char op2[OPNDSIZE];	
+	char res[OPNDSIZE];
+} quadruple;
+quadruple quads[MAXQUADS];
+bool isint(char*s) //Check for integer constant values
+{
+    while(*s)
+    {
+        if(!isdigit(*s))
+            return false;
+        s++;
+    }
+    return true;
 }
-arr[10];
-int n;
-void main() {
-
-  input();
-  constant();
-  output();
-}
-
-void input() {
-
-  int i;
-  printf("\n\nEnter the maximum number of expressions : ");
-  scanf("%d", & n);
-  printf("\nEnter the input : \n");
-  for (i = 0; i < n; i++) {
-    scanf("%s", arr[i].op);
-    scanf("%s", arr[i].op1);
-    scanf("%s", arr[i].op2);
-    scanf("%s", arr[i].res);
-    arr[i].flag = 0;
+//Evaluate the given three address expression
+int calculate(char *op1,char *op2, char optr)
+{
+  int retval = 0;
+  switch(optr)
+  {
+    case '+': 
+                retval = atoi(op1)+atoi(op2);
+                break;
+    case '-': 
+                retval = atoi(op1)-atoi(op2);
+                break;
+    case '*': 
+                retval = atoi(op1)*atoi(op2);
+                break;
+    case '/': 
+                if(atoi(op2)!=0)
+                    retval = atoi(op1)+atoi(op2);
+                break;
+    default:
+                break;
   }
+  return retval;
 }
-
-void constant() {
-  int i;
-  int op1, op2, res;
-  char op, res1[5];
-  for (i = 0; i < n; i++) {
-    if (isdigit(arr[i].op1[0]) && isdigit(arr[i].op2[0]) || strcmp(arr[i].op, "=") == 0) {
-      /*if both digits, store them in variables*/
-      op1 = atoi(arr[i].op1);
-      op2 = atoi(arr[i].op2);
-      op = arr[i].op[0];
-      switch (op) {
-      case '+':
-        res = op1 + op2;
-        break;
-      case '-':
-        res = op1 - op2;
-        break;
-      case '*':
-        res = op1 * op2;
-        break;
-      case '/':
-        res = op1 / op2;
-        break;
-      case '=':
-        res = op1;
-        break;
-      }
-      sprintf(res1, "%d", res);
-      arr[i].flag = 1;
-      change(i, res1);
+char *getconstval(char *opnd) //Get the constant value after folding
+{
+  for(int i=0;i<numquads;i++)
+  {
+    if(quads[i].op=='='&&!strcmp(quads[i].res,opnd))
+      return quads[i].op1;
+  }
+  return opnd;
+}
+void fold() //Evaluate all constant expressions and store back
+{
+  for(int i=0;i<numquads;i++)
+  {
+    if(isint(quads[i].op1)&&isint(quads[i].op2))  //fold
+    {
+     int result = calculate(quads[i].op1,quads[i].op2,quads[i].op);
+     quads[i].op='=';
+     snprintf(quads[i].op1,OPNDSIZE,"%d",result);
+     strcpy(quads[i].op2,"-");
     }
   }
 }
-
-void output() {
-  int i = 0;
-  printf("\nOptimized code is : ");
-  for (i = 0; i < n; i++) {
-    if (!arr[i].flag)
-      printf("\n%s %s %s %s", arr[i].op, arr[i].op1, arr[i].op2, arr[i].res);
+void propogate() //Propogate the evaluated constant values
+{
+  for(int i=0;i<numquads;i++)
+  {
+    strcpy(quads[i].op1,getconstval(quads[i].op1));
+    strcpy(quads[i].op2,getconstval(quads[i].op2));
+    if(isint(quads[i].op1)&&isint(quads[i].op2)) // fold again if both opnds became integers
+      fold(); 
   }
 }
-
-void change(int p, char * res) {
-  int i;
-  for (i = p + 1; i < n; i++) {
-    if (strcmp(arr[p].res, arr[i].op1) == 0)
-      strcpy(arr[i].op1, res);
-    else if (strcmp(arr[p].res, arr[i].op2) == 0)
-      strcpy(arr[i].op2, res);
-  }
+int main()
+{
+    memset(quads,0,sizeof(quads)); //clear the quadruples table
+    printf("Enter the number of 3-address instructions\n");
+    scanf("%d",&numquads);
+    printf("Enter each instruction\n e.g.\n + 2 3 a\n = 3 - b\n");
+    for(int i=0;i<numquads;i++)
+    {
+        getchar(); //Remove stray new lines
+        quads[i].op=getchar();
+        scanf("%s %s %s",quads[i].op1,quads[i].op2,quads[i].res);
+    }
+    fold(); 
+    propogate();
+    printf("The code after constant folding and propogation is:\n");
+    printf("op\topnd1\topnd2\tresult\n");
+    printf("==============================\n");
+    for(int i=0;i<numquads;i++)
+    {
+        printf("%c\t%s\t%s\t%s\n",quads[i].op,quads[i].op1,quads[i].op2,quads[i].res);
+    }
+ return false;
 }
