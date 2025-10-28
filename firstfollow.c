@@ -1,10 +1,3 @@
-/*=============================================================================
- |   Problem:  Find the First and Follow Sets of a Grammar
- |   Author:   Alfred Thomas
- |   Date:     24/4/25  
- |   To Run:   Enter no. of productions first and then each production
- |              A -> a as A=a (Infact any single symbol can be used instead of =)
- +-----------------------------------------------------------------------------*/
 #include<stdio.h>
 #include<string.h>
 #include<ctype.h>
